@@ -1,32 +1,50 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
-public class PlayerMovementCotL : MonoBehaviour
+public class PlayerMovementSimple : MonoBehaviour
 {
-    public float speed = 5f;
-    private Rigidbody rb;
+    public float walkSpeed = 3f;
+    public float runSpeed = 6f;
+    public float rotationSpeed = 10f;
+
+    private CharacterController controller;
+    private Animator anim;
 
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
+        controller = GetComponent<CharacterController>();
+        // Si el Animator estÃ¡ en un hijo del Player, usa GetComponentInChildren
+        anim = GetComponentInChildren<Animator>();
     }
 
-    void FixedUpdate()
+    void Update()
     {
-        float x = Input.GetAxisRaw("Horizontal");
-        float z = Input.GetAxisRaw("Vertical");
+        float h = Input.GetAxisRaw("Horizontal");
+        float v = Input.GetAxisRaw("Vertical");
 
-        // Normalizar la dirección para que no corra más en diagonal
-        Vector3 direction = new Vector3(x, 0, z).normalized;
+        Vector3 inputDir = new Vector3(h, 0, v).normalized;
 
-        // Aplicar movimiento
-        rb.velocity = direction * speed + new Vector3(0, rb.velocity.y, 0);
-
-        // Rotar el modelo hacia la dirección de movimiento
-        if (direction.magnitude > 0.1f)
+        if (inputDir.magnitude >= 0.1f)
         {
-            // Rotación suave
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
+            // RotaciÃ³n hacia la direcciÃ³n del movimiento
+            Quaternion targetRot = Quaternion.LookRotation(inputDir, Vector3.up);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
+
+            // Â¿EstÃ¡ corriendo?
+            bool isRunning = Input.GetKey(KeyCode.LeftShift);
+
+            // Movimiento
+            float currentSpeed = isRunning ? runSpeed : walkSpeed;
+            controller.Move(inputDir * currentSpeed * Time.deltaTime);
+
+            // Animaciones
+            anim.SetBool("isWalking", !isRunning);
+            anim.SetBool("isRunning", isRunning);
+        }
+        else
+        {
+            // Idle
+            anim.SetBool("isWalking", false);
+            anim.SetBool("isRunning", false);
         }
     }
 }
